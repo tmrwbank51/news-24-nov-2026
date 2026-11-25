@@ -20,5 +20,19 @@ const data = readFileSync(dst);
 if (data.length > 1048576) {
   throw new Error(`entry.png is ${data.length} bytes, over the 1 MiB limit`);
 }
+// Validate the file format from its magic bytes: JPEG starts with SOI
+// (0xFF 0xD8), PNG with its 8-byte signature. The contest names the file
+// entry.png either way, so the bytes — not the name — decide the format.
+let format;
+if (data[0] === 0xff && data[1] === 0xd8) {
+  format = "JPEG";
+} else if (
+  data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4e && data[3] === 0x47 &&
+  data[4] === 0x0d && data[5] === 0x0a && data[6] === 0x1a && data[7] === 0x0a
+) {
+  format = "PNG";
+} else {
+  throw new Error("entry.png is neither JPEG nor PNG (bad magic bytes)");
+}
 const sha = createHash("sha256").update(data).digest("hex");
-console.log(`wrote ${dst} (${data.length} bytes, sha256 ${sha})`);
+console.log(`wrote ${dst} (${format}, ${data.length} bytes, sha256 ${sha})`);
